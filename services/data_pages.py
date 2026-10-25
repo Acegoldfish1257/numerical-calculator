@@ -20,7 +20,8 @@ DATA_FIELDS = [
 
 
 def data_run(p, kind):
-    x, y, t = parse_vector(p["x"]), parse_vector(p["y"]), parse_vector(p["t"])
+    x, y = parse_vector(p["x"]), parse_vector(p["y"])
+    t = parse_vector(p["t"]) if "t" in p else np.linspace(min(x), max(x), 100)
     grid = np.linspace(min(x), max(x), 300)
     if kind == "lagrange":
         r = lagrange(x, y, t)

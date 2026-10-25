@@ -21,7 +21,8 @@ def root_run(p, algorithm=bisection):
         if abs(gp(p["x0"]))>=1: raise ValueError("Fixed-point iteration rejected: |g'(x0)| must be below 1 for local convergence.")
         r = fixed_point(g, p["x0"], f=f, **options)
     elif algorithm is newton_raphson:
-        r = newton_raphson(f, f.derivative(), p.get("x0",(p["a"]+p["b"])/2), **options)
+        x0=p["x0"] if "x0" in p else (p["a"]+p["b"])/2
+        r = newton_raphson(f, f.derivative(), x0, **options)
     elif algorithm is secant:
         r = secant(f, p["x0"], p["x1"], **options)
     else:
