@@ -4,7 +4,7 @@ from core.results import result
 
 
 @checked
-def fit_model(x, y, model="exponential"):
+def fit_model(x, y, model="exponential", x_eval=None):
     """Fit a named nonlinear model by its linearized form.
 
     ``exponential`` fits y=a*b**x using ln(y)=ln(a)+x ln(b), requiring y>0.
@@ -23,6 +23,8 @@ def fit_model(x, y, model="exponential"):
     intercept,slope=np.linalg.lstsq(np.column_stack((np.ones_like(X),X)),Y,rcond=None)[0]
     a=float(np.exp(intercept)); b=float(np.exp(slope) if model=="exponential" else slope)
     fitted=a*b**x if model=="exponential" else a*x**b
+    plotted_x = x if x_eval is None else array(x_eval, "Evaluation points")
+    plotted = a*b**plotted_x if model=="exponential" else a*plotted_x**b
     residual=fitted-y
     equation=f"y = {a:.10g} * {b:.10g}^x" if model=="exponential" else f"y = {a:.10g} * x^{b:.10g}"
-    return result(fitted,[dict(x=xi,observed=yi,fitted=fi,residual=ri) for xi,yi,fi,ri in zip(x,y,fitted,residual)],float(np.sqrt(np.mean(residual**2))),error_kind="Original-scale RMSE",coefficients={"a":a,"b":b},equation=equation,linear_form="ln(y) = ln(a) + x*ln(b)" if model=="exponential" else "ln(y) = ln(a) + b*ln(x)",linear_coefficients={"intercept":float(intercept),"slope":float(slope)},model=model)
+    return result(plotted,[dict(x=xi,observed=yi,fitted=fi,residual=ri) for xi,yi,fi,ri in zip(x,y,fitted,residual)],float(np.sqrt(np.mean(residual**2))),error_kind="Original-scale RMSE",coefficients={"a":a,"b":b},equation=equation,linear_form="ln(y) = ln(a) + x*ln(b)" if model=="exponential" else "ln(y) = ln(a) + b*ln(x)",linear_coefficients={"intercept":float(intercept),"slope":float(slope)},model=model, fitted_training_values=fitted)

@@ -41,7 +41,7 @@ def data_run(p, kind):
         order = np.argsort(x)
         reference = CubicSpline(x[order], y[order], bc_type="natural")(t)
     elif kind == "model":
-        r=fit_model(x,y,p["model"]); curve=r["result"]; reference=None
+        r=fit_model(x,y,p["model"]); curve=fit_model(x,y,p["model"],grid)["result"]; reference=None
     else:
         basis = [parse_function(text.strip()) for text in p["basis"].split(";")]
         r = least_squares_fit(x, y, basis=basis, x_eval=t)
