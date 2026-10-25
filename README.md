@@ -45,8 +45,8 @@ Use comma- or space-separated values for vectors, one row per line for matrices,
 | Computer arithmetic | IEEE-754 float32/64 representation, machine epsilon, decimal rounding/truncation and normalized notation, binary arithmetic, absolute/relative/percentage error |
 | Root finding | Bisection, fixed point, Newton-Raphson, secant, four-method comparison |
 | Interpolation | Lagrange, Hermite with first derivatives, conditional error bounds |
-| Approximation and fitting | Sampled polynomial least squares, basis-function curve fitting, natural/clamped cubic spline API, Taylor approximation |
-| Integration | Composite midpoint, trapezoidal, Simpson 1/3, closed Newton-Cotes orders 1-6, Gauss-Legendre |
+| Approximation and fitting | Sampled polynomial least squares, automatic exponential/power model fitting with logarithmic linearization, natural/clamped cubic spline API, Taylor approximation |
+| Integration | Composite midpoint, trapezoidal, Simpson 1/3, Simpson 3/8, general closed Newton-Cotes orders 1-6, Gauss-Legendre |
 | Differentiation and ODEs | Forward/backward/central first differences, central second difference, step-size error study, scalar classical RK4 |
 | Linear algebra | Gaussian elimination with no/partial/scaled pivoting, LU, Cholesky, inverse, condition numbers, Jacobi, Gauss-Seidel |
 | Best approximation | Linear least squares (QR/SVD), classical/modified Gram-Schmidt, Householder QR, SVD |
@@ -91,6 +91,7 @@ Invalid input raises `ValueError`; the UI renders it with `st.error`. Iteration 
 - Fixed point needs a user-supplied `g(x)`. A small original-equation residual is also required. Local methods and SciPy can find different roots.
 - Interpolation bounds require a valid higher-derivative bound over the whole relevant interval. Data alone cannot supply that bound.
 - Composite quadrature error estimates use refinement and smooth asymptotic error assumptions. Newton-Cotes and Gaussian differences are indicators, not rigorous bounds. Integration currently requires finite ordered bounds; improper integrals are outside scope.
+- Non-polynomial model fitting supports y=a*b^x and y=a*x^b. The app derives the logarithmic linear form, estimates coefficients, converts them back and displays the fitted equation.
 - Cubic-spline UI uses natural boundary conditions. The Python API additionally supports clamped endpoint slopes. Spline extrapolation is rejected.
 - Polynomial approximation is discrete sampled least squares, not minimax or continuous orthogonal projection. Curve fitting is linear in its specified coefficients.
 - RK4 handles one real scalar ODE and forward time. It is fixed-step, with a shortened final step, and is not a general stiff-system solver.

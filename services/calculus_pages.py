@@ -8,6 +8,7 @@ from services.common import Field, Method, function_plot
 from methods.integration.midpoint import midpoint
 from methods.integration.trapezoidal import trapezoidal
 from methods.integration.simpson import simpson
+from methods.integration.simpson_three_eighth import simpson_three_eighth
 from methods.integration.newton_cotes import newton_cotes
 from methods.integration.gauss_legendre import gauss_legendre
 from methods.differentiation.finite_difference import finite_difference
@@ -192,3 +193,4 @@ CALCULUS_METHODS.extend(
         ),
     ]
 )
+CALCULUS_METHODS.append(Method("Integration", "Simpson 3/8", "Composite Simpson 3/8; n must be a multiple of 3.", [*INTEGRAL_FIELDS, Field("n", "Subinterval count", 12, "integer")], lambda p: integration_run(p, simpson_three_eighth)))

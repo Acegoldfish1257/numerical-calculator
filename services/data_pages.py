@@ -10,6 +10,7 @@ from methods.interpolation.error_bound import interpolation_error_bound
 from methods.curve_fitting.least_squares_fit import least_squares_fit
 from methods.curve_fitting.polynomial_approximation import polynomial_approximation
 from methods.curve_fitting.cubic_spline import cubic_spline
+from methods.curve_fitting.model_fit import fit_model
 
 DATA_FIELDS = [
     Field("x", "Data x values", "0, 1, 2"),
@@ -38,6 +39,8 @@ def data_run(p, kind):
         curve = cubic_spline(x, y, grid)["result"]
         order = np.argsort(x)
         reference = CubicSpline(x[order], y[order], bc_type="natural")(t)
+    elif kind == "model":
+        r=fit_model(x,y,p["model"]); curve=r["result"]; reference=None
     else:
         basis = [parse_function(text.strip()) for text in p["basis"].split(";")]
         r = least_squares_fit(x, y, basis=basis, x_eval=t)
@@ -107,7 +110,7 @@ DATA_METHODS = [
         bound_run,
     ),
     Method(
-        "Approximation and fitting",
+        "Interpolation",
         "Least-squares curve fit",
         "Fits a linear combination of your basis functions. The displayed error is training RMSE, not a prediction-error bound.",
         [
@@ -116,6 +119,7 @@ DATA_METHODS = [
         ],
         lambda p: data_run(p, "fit"),
     ),
+    Method("Approximation and fitting", "Non-polynomial model fit", "Fit y=a*b^x or y=a*x^b by logarithmic linearization, then display the converted coefficients and equation.", [*DATA_FIELDS[:2], Field("model", "Model", "exponential", "choice", ("exponential", "power"))], lambda p: data_run(p, "model")),
     Method(
         "Approximation and fitting",
         "Cubic spline",
