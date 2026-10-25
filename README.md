@@ -2,6 +2,8 @@
 
 A local browser calculator built with Streamlit, Python, NumPy, SciPy, SymPy and Matplotlib. It implements 38 numerical method modules and a four-method root comparison page. Each page provides relevant inputs, a Run button, a result, a step table, a Matplotlib plot and numerical diagnostics.
 
+The app uses Streamlit's minimal toolbar so the developer clear-cache shortcut is not available to normal users.
+
 ## Install and run
 
 Tested on Windows with Python 3.12. Use Python 3.12 to reproduce the verified environment.
