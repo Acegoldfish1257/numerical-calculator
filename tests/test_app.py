@@ -6,6 +6,13 @@ from services.catalog import METHODS
 APP = str(Path(__file__).resolve().parents[1] / "app.py")
 
 
+def select_method(app, method):
+    app.selectbox(key="topic").select(method.topic).run()
+    app.selectbox(key="method").select(method.group or method.name).run()
+    if method.group:
+        app.selectbox(key=f"variant:{method.topic}:{method.group}").select(method.name).run()
+
+
 def test_bisection_page():
     app = AppTest.from_file(APP, default_timeout=30).run()
     assert not app.exception
@@ -21,8 +28,7 @@ def test_bisection_page():
 @pytest.mark.parametrize("method", METHODS, ids=lambda m: m.name)
 def test_default_page(method):
     app = AppTest.from_file(APP, default_timeout=30).run()
-    app.selectbox(key="topic").select(method.topic).run()
-    app.selectbox(key="method").select(method.name).run()
+    select_method(app, method)
     app.button[0].click().run()
     assert not app.exception
     assert not app.error
@@ -32,8 +38,7 @@ def test_default_page(method):
 @pytest.mark.parametrize("method", METHODS, ids=lambda m: m.name)
 def test_bad_input_never_crashes(method):
     app = AppTest.from_file(APP, default_timeout=30).run()
-    app.selectbox(key="topic").select(method.topic).run()
-    app.selectbox(key="method").select(method.name).run()
+    select_method(app, method)
     field = next((field for field in method.fields if field.kind in ("text", "area")), method.fields[0])
     widget = app.text_area if field.kind == "area" else app.text_input if field.kind == "text" else None
     if widget is None:

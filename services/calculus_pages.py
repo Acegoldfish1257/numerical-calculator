@@ -120,7 +120,7 @@ for name, fn, n, description in [
         "Composite trapezoids: h times the weighted node sum, with endpoint weights 1/2.",
     ),
     (
-        "Simpson",
+        "Simpson 1/3",
         simpson,
         20,
         "Composite Simpson 1/3: weights 1,4,2,...,4,1 times h/3. Requires an even subinterval count.",
@@ -133,6 +133,7 @@ for name, fn, n, description in [
             description,
             [*INTEGRAL_FIELDS, Field("n", "Subinterval count", n, "integer")],
             lambda p, fn=fn: integration_run(p, fn),
+            group="Simpson" if fn is simpson else "",
         )
     )
 CALCULUS_METHODS.extend(
@@ -193,4 +194,4 @@ CALCULUS_METHODS.extend(
         ),
     ]
 )
-CALCULUS_METHODS.append(Method("Integration", "Simpson 3/8", "Composite Simpson 3/8; n must be a multiple of 3.", [*INTEGRAL_FIELDS, Field("n", "Subinterval count", 12, "integer")], lambda p: integration_run(p, simpson_three_eighth)))
+CALCULUS_METHODS.append(Method("Integration", "Simpson 3/8", "Composite Simpson 3/8; n must be a multiple of 3.", [*INTEGRAL_FIELDS, Field("n", "Subinterval count", 12, "integer")], lambda p: integration_run(p, simpson_three_eighth), group="Simpson"))

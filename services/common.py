@@ -23,6 +23,7 @@ class Method:
     description: str
     fields: list[Field]
     run: object
+    group: str = ""
 
 
 def parse_vector(text):

@@ -92,8 +92,17 @@ def main():
     topics = list(dict.fromkeys(m.topic for m in METHODS))
     topic = st.sidebar.selectbox("Topic", topics, key="topic")
     available = [m for m in METHODS if m.topic == topic]
-    name = st.sidebar.selectbox("Method", [m.name for m in available], key="method")
-    method = next(m for m in available if m.name == name)
+    families = list(dict.fromkeys(m.group or m.name for m in available))
+    family = st.sidebar.selectbox("Method", families, key="method")
+    variants = [m for m in available if (m.group or m.name) == family]
+    if len(variants) > 1:
+        name = st.sidebar.selectbox(
+            "Rule / variant", [m.name for m in variants], key=f"variant:{topic}:{family}"
+        )
+        method = next(m for m in variants if m.name == name)
+    else:
+        method = variants[0]
+        name = method.name
     st.caption(topic.upper())
     st.title(method.name)
     st.info(method.description)
