@@ -16,13 +16,11 @@ from methods.linear_algebra.conditioning import matrix_conditioning
 from methods.linear_algebra.inverse import matrix_inverse
 from methods.linear_algebra.jacobi import jacobi
 from methods.linear_algebra.gauss_seidel import gauss_seidel
+from methods.linear_algebra.norms import vector_norms
 from methods.best_approximation.gram_schmidt import gram_schmidt
 from methods.best_approximation.qr import qr_factorization
-from methods.best_approximation.svd import svd_factorization
 from methods.best_approximation.least_squares import least_squares
 from methods.optimization.gradient_descent import gradient_descent
-from methods.optimization.newton import newton_optimization
-from methods.optimization.conjugate_gradient import conjugate_gradient
 from methods.eigenvalues.power_iteration import power_iteration
 from methods.eigenvalues.inverse_iteration import inverse_iteration
 
@@ -62,11 +60,22 @@ def taylor_run(p):
     return r
 
 
+def norms_run(p):
+    r = vector_norms(parse_vector(p["values"]))
+    r["plot"] = dict(
+        kind="bar",
+        x=list(r["result"]),
+        series={"Norm value": list(r["result"].values())},
+        ylabel="Norm",
+    )
+    return r
+
+
 def matrix_run(p, fn):
     A = parse_matrix(p["A"])
     if fn is gaussian_elimination:
         r = fn(A, parse_vector(p["b"]), pivoting=p["pivoting"])
-    elif fn in (jacobi, gauss_seidel, conjugate_gradient):
+    elif fn in (jacobi, gauss_seidel):
         r = fn(
             A,
             parse_vector(p["b"]),
@@ -92,7 +101,6 @@ def matrix_run(p, fn):
         gaussian_elimination,
         jacobi,
         gauss_seidel,
-        conjugate_gradient,
         least_squares,
     ):
         b = parse_vector(p["b"])
@@ -100,7 +108,7 @@ def matrix_run(p, fn):
         r["diagnostics"]["scipy_solution_difference"] = float(
             np.linalg.norm(value - reference)
         )
-        if fn in (jacobi, gauss_seidel, conjugate_gradient):
+        if fn in (jacobi, gauss_seidel):
             r["plot"] = dict(
                 x=[row["iteration"] for row in r["history"]],
                 series={"Residual": [row["residual"] for row in r["history"]]},
@@ -135,15 +143,6 @@ def matrix_run(p, fn):
             x=[str(row["index"]) for row in r["history"]],
             series={"Singular values": [row["singular_value"] for row in r["history"]]},
         )
-    elif fn is svd_factorization:
-        r["diagnostics"]["scipy_singular_value_difference"] = float(
-            np.max(np.abs(value["s"] - linalg.svdvals(A)))
-        )
-        r["plot"] = dict(
-            kind="bar",
-            x=[str(i + 1) for i in range(len(value["s"]))],
-            series={"Singular values": value["s"]},
-        )
     else:
         if fn is matrix_inverse:
             r["diagnostics"]["scipy_inverse_difference"] = float(
@@ -170,14 +169,9 @@ def optimization_run(p, fn):
     first = [parsed.derivative(variable=i) for i in range(2)]
     f = lambda x: parsed(*x)
     grad = lambda x: np.array([d(*x) for d in first])
-    if fn is newton_optimization:
-        second = [[first[i].derivative(variable=j) for j in range(2)] for i in range(2)]
-        hessian = lambda x: np.array([[d(*x) for d in row] for row in second])
-        r = fn(f, grad, hessian, start, tol=p["tol"], max_iter=p["limit"])
-    else:
-        r = fn(
-            f, grad, start, initial_step=p["step"], tol=p["tol"], max_iter=p["limit"]
-        )
+    r = fn(
+        f, grad, start, initial_step=p["step"], tol=p["tol"], max_iter=p["limit"]
+    )
     reference = optimize.minimize(f, start, jac=grad, method="BFGS", tol=1e-10)
     r["diagnostics"].update(
         scipy_objective=float(reference.fun),
@@ -266,7 +260,7 @@ ADVANCED_METHODS = [
     Method(
         "Linear algebra",
         "Gaussian elimination",
-        "Elimination and back substitution, with optional partial or scaled partial pivoting. A residual is not a forward-error bound.",
+        "Elimination and back substitution, with partial, scaled, or complete pivoting. A residual is not a forward-error bound.",
         [
             MATRIX,
             RHS,
@@ -275,7 +269,7 @@ ADVANCED_METHODS = [
                 "Pivoting strategy",
                 "partial",
                 "choice",
-                ("partial", "scaled", "none"),
+                ("partial", "complete", "scaled", "none"),
             ),
         ],
         lambda p: matrix_run(p, gaussian_elimination),
@@ -307,6 +301,13 @@ ADVANCED_METHODS = [
         "κ(A)=||A|| ||A⁻¹||. For the 2-norm this is the ratio of largest to smallest singular values. NumPy backend.",
         [MATRIX, Field("norm", "Matrix norm", "2", "choice", ("2", "1", "inf"))],
         lambda p: matrix_run(p, matrix_conditioning),
+    ),
+    Method(
+        "Linear algebra",
+        "Vector norms",
+        "Computes L1, L2 and L∞ norms. These measure vector size in different ways.",
+        [Field("values", "Vector values", "3, -4, 12")],
+        norms_run,
     ),
     Method(
         "Linear algebra",
@@ -348,20 +349,6 @@ ADVANCED_METHODS = [
         [MATRIX],
         lambda p: matrix_run(p, qr_factorization),
     ),
-    Method(
-        "Best approximation",
-        "SVD",
-        "Reduced singular value decomposition A = U diag(s) Vᵀ. This page explicitly uses NumPy/LAPACK and verifies against SciPy.",
-        [MATRIX],
-        lambda p: matrix_run(p, svd_factorization),
-    ),
-    Method(
-        "Optimization",
-        "Conjugate gradient",
-        "Minimizes ½xᵀAx-bᵀx for a symmetric positive-definite matrix. This is linear CG for a quadratic objective.",
-        [MATRIX, RHS, *ITER],
-        lambda p: matrix_run(p, conjugate_gradient),
-    ),
 ]
 OPT_FIELDS = [
     Field("f", "Objective f(x,y)", "(x-2)^2 + 2*(y+1)^2"),
@@ -377,13 +364,6 @@ ADVANCED_METHODS.extend(
             "Unconstrained two-variable objective with symbolic gradient and Armijo backtracking. A stationary point need not be a global minimum.",
             [*OPT_FIELDS, Field("step", "Initial trial step", 1.0, "number")],
             lambda p: optimization_run(p, gradient_descent),
-        ),
-        Method(
-            "Optimization",
-            "Newton optimization",
-            "Uses the symbolic Hessian and an Armijo line search. This implementation requires a positive-definite Hessian at every iterate.",
-            OPT_FIELDS,
-            lambda p: optimization_run(p, newton_optimization),
         ),
         Method(
             "Eigenvalues",

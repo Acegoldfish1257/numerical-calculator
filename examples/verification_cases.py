@@ -9,7 +9,6 @@ from methods.root_finding.fixed_point import fixed_point
 from methods.root_finding.newton_raphson import newton_raphson
 from methods.root_finding.secant import secant
 from methods.interpolation.lagrange import lagrange
-from methods.interpolation.hermite import hermite
 from methods.interpolation.error_bound import interpolation_error_bound
 from methods.curve_fitting.polynomial_approximation import polynomial_approximation
 from methods.curve_fitting.least_squares_fit import least_squares_fit
@@ -18,10 +17,9 @@ from methods.curve_fitting.taylor import taylor_approximation
 from methods.integration.midpoint import midpoint
 from methods.integration.trapezoidal import trapezoidal
 from methods.integration.simpson import simpson
-from methods.integration.newton_cotes import newton_cotes
+from methods.integration.simpson_three_eighth import simpson_three_eighth
 from methods.integration.gauss_legendre import gauss_legendre
-from methods.differentiation.finite_difference import finite_difference
-from methods.ode_solvers.rk4 import rk4
+from methods.ode_solvers.rk2 import rk2
 from methods.computer_arithmetic.floating_point import floating_point_representation
 from methods.computer_arithmetic.arithmetic import floating_point_arithmetic
 from methods.computer_arithmetic.error_analysis import numerical_error
@@ -33,13 +31,11 @@ from methods.linear_algebra.conditioning import matrix_conditioning
 from methods.linear_algebra.inverse import matrix_inverse
 from methods.linear_algebra.jacobi import jacobi
 from methods.linear_algebra.gauss_seidel import gauss_seidel
+from methods.linear_algebra.norms import vector_norms
 from methods.best_approximation.gram_schmidt import gram_schmidt
 from methods.best_approximation.qr import qr_factorization
-from methods.best_approximation.svd import svd_factorization
 from methods.best_approximation.least_squares import least_squares
 from methods.optimization.gradient_descent import gradient_descent
-from methods.optimization.newton import newton_optimization
-from methods.optimization.conjugate_gradient import conjugate_gradient
 from methods.eigenvalues.power_iteration import power_iteration
 from methods.eigenvalues.inverse_iteration import inverse_iteration
 
@@ -96,13 +92,6 @@ def cases():
             [1.25],
             1e-12,
             lambda: lagrange([0, 1, 2], [1, 2, 5], [0.5])["result"],
-        ),
-        Case(
-            "Hermite",
-            "x^3 with derivative, nodes [0,2]; query 0.5",
-            [0.125],
-            1e-12,
-            lambda: hermite([0, 2], [0, 8], [0, 12], [0.5])["result"],
         ),
         Case(
             "Interpolation bound",
@@ -169,11 +158,11 @@ def cases():
             lambda: simpson(math.exp, 0, 1, 20)["result"],
         ),
         Case(
-            "Newton-Cotes",
-            "integral exp(x), [0,1], order=4, panels=4",
+            "Simpson 3/8",
+            "integral exp(x), [0,1], n=120",
             math.expm1(1),
-            1e-9,
-            lambda: newton_cotes(math.exp, 0, 1, order=4, panels=4)["result"],
+            1e-7,
+            lambda: simpson_three_eighth(math.exp, 0, 1, 120)["result"],
         ),
         Case(
             "Gauss-Legendre",
@@ -183,18 +172,11 @@ def cases():
             lambda: gauss_legendre(math.exp, 0, 1, nodes=4)["result"],
         ),
         Case(
-            "Central difference",
-            "d exp(x)/dx at x=1,h=1e-4",
-            math.e,
-            1e-7,
-            lambda: finite_difference(math.exp, 1, 1e-4)["result"],
-        ),
-        Case(
-            "RK4",
+            "RK2",
             "y'=y,y(0)=1,t_end=1,h=.1",
             math.e,
-            3e-6,
-            lambda: rk4(lambda t, y: y, 0, 1, 1, 0.1)["result"],
+            5e-3,
+            lambda: rk2(lambda t, y: y, 0, 1, 1, 0.1)["result"],
         ),
         Case(
             "Floating point",
@@ -253,6 +235,13 @@ def cases():
             lambda: matrix_conditioning([[1, 0], [0, 100]])["result"],
         ),
         Case(
+            "Vector norms",
+            "v=[3,-4,12]; L1,L2,L∞",
+            [19, 13, 12],
+            1e-12,
+            lambda: list(vector_norms([3, -4, 12])["result"].values()),
+        ),
+        Case(
             "Inverse",
             "A=[[4,1],[1,3]]; inverse residual",
             0.0,
@@ -288,13 +277,6 @@ def cases():
             lambda: qr_factorization(A)["error_estimate"],
         ),
         Case(
-            "SVD",
-            "singular values of diag(3,2)",
-            [3, 2],
-            1e-12,
-            lambda: svd_factorization([[3, 0], [0, 2]])["result"]["s"],
-        ),
-        Case(
             "Linear least squares",
             "A=[[1,0],[1,1],[1,2]],b=[1,3,5]",
             [1, 2],
@@ -307,22 +289,6 @@ def cases():
             [2, -1],
             1e-8,
             lambda: gradient_descent(objective, gradient, [0, 0])["result"],
-        ),
-        Case(
-            "Newton optimization",
-            "same quadratic, start (0,0)",
-            [2, -1],
-            1e-12,
-            lambda: newton_optimization(
-                objective, gradient, lambda x: np.diag([2.0, 4.0]), [0, 0]
-            )["result"],
-        ),
-        Case(
-            "Conjugate gradient",
-            "min .5*x^T*A*x-b^T*x; A=[[4,1],[1,3]],b=[1,2]",
-            solution,
-            1e-12,
-            lambda: conjugate_gradient(A, b)["result"],
         ),
         Case(
             "Power iteration",

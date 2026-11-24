@@ -3,7 +3,7 @@ import pytest
 from methods.linear_algebra.gaussian_elimination import gaussian_elimination
 
 
-@pytest.mark.parametrize("pivoting", ["partial", "scaled"])
+@pytest.mark.parametrize("pivoting", ["partial", "scaled", "complete"])
 def test_swap(pivoting):
     A = np.array([[0.0, 2.0, 1.0], [1.0, -2.0, -3.0], [3.0, -1.0, 2.0]])
     b = A @ np.array([1.0, 2.0, 3.0])

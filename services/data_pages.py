@@ -1,11 +1,10 @@
 """Data-oriented calculator pages and SciPy cross-checks."""
 
 import numpy as np
-from scipy.interpolate import BarycentricInterpolator, KroghInterpolator, CubicSpline
+from scipy.interpolate import BarycentricInterpolator, CubicSpline
 from services.common import Field, Method, parse_vector
 from core.expressions import parse_function
 from methods.interpolation.lagrange import lagrange
-from methods.interpolation.hermite import hermite
 from methods.interpolation.error_bound import interpolation_error_bound
 from methods.curve_fitting.least_squares_fit import least_squares_fit
 from methods.curve_fitting.polynomial_approximation import polynomial_approximation
@@ -27,14 +26,6 @@ def data_run(p, kind):
         r = lagrange(x, y, t)
         curve = lagrange(x, y, grid)["result"]
         reference = BarycentricInterpolator(x, y)(t)
-    elif kind == "hermite":
-        dy = parse_vector(p["dy"])
-        r = hermite(x, y, dy, t)
-        curve = hermite(x, y, dy, grid)["result"]
-        order = np.argsort(x)
-        reference = KroghInterpolator(
-            np.repeat(x[order], 2), np.column_stack((y[order], dy[order])).ravel()
-        )(t)
     elif kind == "spline":
         r = cubic_spline(x, y, t)
         curve = cubic_spline(x, y, grid)["result"]
@@ -93,22 +84,14 @@ DATA_METHODS = [
     ),
     Method(
         "Interpolation",
-        "Hermite",
-        "Confluent divided differences match both function values and first derivatives at each node.",
-        [*DATA_FIELDS, Field("dy", "Derivative values at data nodes", "0, 2, 4")],
-        lambda p: data_run(p, "hermite"),
-    ),
-    Method(
-        "Interpolation",
         "Interpolation error bound",
-        "Enter M bounding the n-th derivative (Lagrange) or 2n-th derivative (Hermite), over all nodes and evaluation points.",
+        "Enter M bounding the n-th derivative over all interpolation nodes and evaluation points.",
         [
             DATA_FIELDS[0],
             DATA_FIELDS[2],
             Field("M", "Derivative magnitude bound M", 2.0, "number"),
-            Field("kind", "Interpolant", "lagrange", "choice", ("lagrange", "hermite")),
         ],
-        bound_run,
+        lambda p: bound_run({**p, "kind": "lagrange"}),
     ),
     Method(
         "Interpolation",
@@ -122,7 +105,7 @@ DATA_METHODS = [
     ),
     Method("Approximation and fitting", "Non-polynomial model fit", "Fit y=a*b^x or y=a*x^b by logarithmic linearization, then display the converted coefficients and equation.", [*DATA_FIELDS[:2], Field("model", "Model", "exponential", "choice", ("exponential", "power"))], lambda p: data_run(p, "model")),
     Method(
-        "Approximation and fitting",
+        "Interpolation",
         "Cubic spline",
         "Natural cubic spline: second derivative is zero at both endpoints. Evaluation must stay inside the data range.",
         DATA_FIELDS,

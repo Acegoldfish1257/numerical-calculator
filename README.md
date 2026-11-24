@@ -1,6 +1,6 @@
 # CS-2008 Numerical Calculator
 
-A local browser calculator built with Streamlit, Python, NumPy, SciPy, SymPy and Matplotlib. It implements 38 numerical method modules and a four-method root comparison page. Each page provides relevant inputs, a Run button, a result, a step table, a Matplotlib plot and numerical diagnostics.
+A local browser calculator built with Streamlit, Python, NumPy, SciPy, SymPy and Matplotlib. Each page provides relevant inputs, a Run button, a result, a step table, a Matplotlib plot and numerical diagnostics.
 
 The app uses Streamlit's minimal toolbar so the developer clear-cache shortcut is not available to normal users.
 
@@ -46,16 +46,16 @@ Use comma- or space-separated values for vectors, one row per line for matrices,
 | --- | --- |
 | Computer arithmetic | IEEE-754 float32/64 representation, machine epsilon, decimal rounding/truncation and normalized notation, binary arithmetic, absolute/relative/percentage error |
 | Root finding | Bisection, fixed point, Newton-Raphson, secant, four-method comparison |
-| Interpolation | Lagrange, Hermite with first derivatives, conditional error bounds |
-| Approximation and fitting | Sampled polynomial least squares, automatic exponential/power model fitting with logarithmic linearization, natural/clamped cubic spline API, Taylor approximation |
-| Integration | Composite midpoint, trapezoidal, Simpson 1/3, Simpson 3/8, general closed Newton-Cotes orders 1-6, Gauss-Legendre |
-| Differentiation and ODEs | Forward/backward/central first differences, central second difference, step-size error study, scalar classical RK4 |
-| Linear algebra | Gaussian elimination with no/partial/scaled pivoting, LU, Cholesky, inverse, condition numbers, Jacobi, Gauss-Seidel |
-| Best approximation | Linear least squares (QR/SVD), classical/modified Gram-Schmidt, Householder QR, SVD |
-| Optimization | Two-variable gradient descent, Newton optimization, linear conjugate gradient for SPD quadratics |
+| Interpolation | Lagrange, conditional error bounds, natural cubic spline |
+| Approximation and fitting | Sampled polynomial least squares, automatic exponential/power model fitting with logarithmic linearization, Taylor approximation |
+| Integration | Composite midpoint, trapezoidal, Simpson 1/3, Simpson 3/8, Gauss-Legendre |
+| Differentiation and ODEs | Scalar midpoint RK2 |
+| Linear algebra | Gaussian elimination with no/partial/scaled/complete pivoting, LU, Cholesky, inverse, condition numbers, L1/L2/L∞ vector norms, Jacobi, Gauss-Seidel |
+| Best approximation | Linear least squares (QR/SVD backend), classical/modified Gram-Schmidt, Householder QR |
+| Optimization | Two-variable gradient descent |
 | Eigenvalues | Power and shifted inverse iteration for real symmetric matrices |
 
-The supplied official brief determines the project scope. The course outline adds context, including Taylor approximation, inversion, conjugate gradient and Newton optimization. General Python/programming lessons and mathematical background are not separate calculator pages. See `docs/requirements_matrix.md` for the mapping. Report and slide creation are outside this implementation's scope, as requested.
+The confirmed course modifications determine the calculator scope. Report and slide creation are outside this implementation's scope, as requested.
 
 ## Architecture
 
@@ -92,16 +92,16 @@ Invalid input raises `ValueError`; the UI renders it with `st.error`. Iteration 
 - Bisection assumes continuity. A sign change alone does not prove a root across a discontinuity. The implementation requires both a narrow bracket and a small residual, unless an exact floating-point zero is found.
 - Fixed point needs a user-supplied `g(x)`. A small original-equation residual is also required. Local methods and SciPy can find different roots.
 - Interpolation bounds require a valid higher-derivative bound over the whole relevant interval. Data alone cannot supply that bound.
-- Composite quadrature error estimates use refinement and smooth asymptotic error assumptions. Newton-Cotes and Gaussian differences are indicators, not rigorous bounds. Integration currently requires finite ordered bounds; improper integrals are outside scope.
+- Composite quadrature error estimates use refinement and smooth asymptotic error assumptions. Gaussian differences are indicators, not rigorous bounds. Integration currently requires finite ordered bounds; improper integrals are outside scope.
 - Non-polynomial model fitting supports y=a*b^x and y=a*x^b. The app derives the logarithmic linear form, estimates coefficients, converts them back and displays the fitted equation.
 - Cubic-spline UI uses natural boundary conditions. The Python API additionally supports clamped endpoint slopes. Spline extrapolation is rejected.
 - Polynomial approximation is discrete sampled least squares, not minimax or continuous orthogonal projection. Curve fitting is linear in its specified coefficients.
-- RK4 handles one real scalar ODE and forward time. It is fixed-step, with a shortened final step, and is not a general stiff-system solver.
-- Gradient descent/Newton pages handle two real variables. Newton optimization requires a positive-definite Hessian at every step. Linear CG minimizes an SPD quadratic; nonlinear CG is not implemented.
+- RK2 handles one real scalar ODE and forward time. It is fixed-step, with a shortened final step, and is not a general stiff-system solver.
+- Gradient descent handles two real variables and converges to a stationary point, not necessarily a global minimum.
 - Eigenpair pages accept real symmetric matrices. The starting vector and spectral gaps affect which eigenpair is found. Small eigenpair residual alone does not establish that it is the dominant/nearest eigenpair.
 - Most core algorithms are explicit educational implementations. SVD, condition numbers, curve-fit least squares and Gaussian node generation deliberately use NumPy routines; these backends are labeled. SciPy supplies independent comparisons where appropriate.
 - Expressions are limited to 300 characters, an allowlisted AST, bounded powers/depth and supported names before `sympy.parse_expr` and `lambdify`. No application code calls Python `eval`. SymPy internally uses evaluation/code generation; this is a local educational tool, not a public untrusted-code service. Further process isolation would be needed for public multi-user hosting.
-- Input sizes are capped. Examples: matrices 50x50, RK4 at most 10000 steps, Lagrange 30 nodes, Hermite 15 nodes, splines 200 nodes. Errors explain these limits.
+- Input sizes are capped. Examples: matrices 50x50, RK2 at most 10000 steps, Lagrange 30 nodes and splines 200 nodes. Errors explain these limits.
 
 ## Verification
 
@@ -110,7 +110,7 @@ Invalid input raises `ValueError`; the UI renders it with `st.error`. Iteration 
 .\.venv\Scripts\python.exe scripts/generate_verification_table.py
 ```
 
-The generated `docs/test_results.md` and `docs/test_results.csv` contain expected values, actual results, absolute errors and stated tolerances for 38 reproducible examples. Pytest also checks adversarial expression syntax, invalid inputs on every page, nonconvergence, factor reconstruction and independent SciPy references. Streamlit `AppTest` tests the Run buttons, tables and error messages; a local browser check verifies actual page rendering.
+The generated `docs/test_results.md` and `docs/test_results.csv` contain expected values, actual results, absolute errors and stated tolerances for reproducible examples. Pytest also checks adversarial expression syntax, invalid inputs on every page, nonconvergence, factor reconstruction and independent SciPy references. Streamlit `AppTest` tests the Run buttons, tables and error messages; a local browser check verifies actual page rendering.
 
 Typical examples are the root of `x^3-x-2`, the integral of `exp(x)` on `[0,1]`, and `y'=y, y(0)=1` through `t=1`.
 

@@ -9,10 +9,8 @@ from methods.integration.midpoint import midpoint
 from methods.integration.trapezoidal import trapezoidal
 from methods.integration.simpson import simpson
 from methods.integration.simpson_three_eighth import simpson_three_eighth
-from methods.integration.newton_cotes import newton_cotes
 from methods.integration.gauss_legendre import gauss_legendre
-from methods.differentiation.finite_difference import finite_difference
-from methods.ode_solvers.rk4 import rk4
+from methods.ode_solvers.rk2 import rk2
 
 INTEGRAL_FIELDS = [
     Field("f", "f(x)", "exp(x)"),
@@ -23,9 +21,7 @@ INTEGRAL_FIELDS = [
 
 def integration_run(p, fn):
     f = parse_function(p["f"])
-    if fn is newton_cotes:
-        r = fn(f, p["a"], p["b"], order=p["order"], panels=p["panels"])
-    elif fn is gauss_legendre:
+    if fn is gauss_legendre:
         r = fn(f, p["a"], p["b"], nodes=p["nodes"])
     else:
         r = fn(f, p["a"], p["b"], p["n"])
@@ -46,40 +42,9 @@ def integration_run(p, fn):
     return r
 
 
-def differentiation_run(p):
-    f = parse_function(p["f"])
-    r = finite_difference(f, p["x"], p["h"], formula=p["formula"])
-    reference = f.derivative(order=r["diagnostics"]["derivative_order"])(p["x"])
-    r["diagnostics"].update(
-        symbolic_derivative=reference,
-        reference_difference=abs(r["result"] - reference),
-        stencil=r["history"],
-    )
-    rows = []
-    for h in np.logspace(-1, -9, 17):
-        try:
-            q = finite_difference(f, p["x"], float(h), formula=p["formula"])["result"]
-            rows.append(dict(h=h, approximation=q, absolute_error=abs(q - reference)))
-        except ValueError:
-            continue
-    if rows:
-        r["history"] = rows
-        r["plot"] = dict(
-            x=[row["h"] for row in rows],
-            series={
-                "Absolute error": [max(row["absolute_error"], 1e-18) for row in rows]
-            },
-            xlabel="Step size h",
-            ylabel="Absolute error (plot floor 1e-18)",
-            logx=True,
-            logy=True,
-        )
-    return r
-
-
 def ode_run(p):
     f = parse_function(p["f"], ("t", "y"))
-    r = rk4(f, p["t0"], p["y0"], p["end"], p["h"])
+    r = rk2(f, p["t0"], p["y0"], p["end"], p["h"])
     t, y = r["diagnostics"]["t"], r["diagnostics"]["y"]
     reference = solve_ivp(
         lambda t, y: [f(t, float(y[0]))],
@@ -91,14 +56,14 @@ def ode_run(p):
     )
     if not reference.success or reference.y.shape[1] != len(t):
         r["diagnostics"]["reference_unavailable"] = reference.message
-        r["plot"] = dict(x=t, series={"RK4": y}, xlabel="t", ylabel="y")
+        r["plot"] = dict(x=t, series={"RK2": y}, xlabel="t", ylabel="y")
     else:
         r["diagnostics"]["max_difference_from_solve_ivp"] = float(
             np.max(np.abs(y - reference.y[0]))
         )
         r["plot"] = dict(
             x=t,
-            series={"RK4": y, "SciPy solve_ivp": reference.y[0]},
+            series={"RK2": y, "SciPy solve_ivp": reference.y[0]},
             xlabel="t",
             ylabel="y",
         )
@@ -140,17 +105,6 @@ CALCULUS_METHODS.extend(
     [
         Method(
             "Integration",
-            "Newton–Cotes",
-            "Closed rules with 2 to 7 equally spaced nodes per panel. Displays computed weights and each contribution.",
-            [
-                *INTEGRAL_FIELDS,
-                Field("order", "Order (nodes per panel minus one)", 4, "integer"),
-                Field("panels", "Panel count", 4, "integer"),
-            ],
-            lambda p: integration_run(p, newton_cotes),
-        ),
-        Method(
-            "Integration",
             "Gauss–Legendre",
             "Nodes are roots of the Legendre polynomial P_n. An n-node rule is exact through polynomial degree 2n-1, up to rounding.",
             [*INTEGRAL_FIELDS, Field("nodes", "Number of nodes", 4, "integer")],
@@ -158,31 +112,8 @@ CALCULUS_METHODS.extend(
         ),
         Method(
             "Differentiation and ODEs",
-            "Finite differences",
-            "Forward/backward first differences are O(h); central first and second differences are O(h²). The plot shows truncation error versus roundoff as h changes.",
-            [
-                Field("f", "f(x)", "sin(x)"),
-                Field("x", "Evaluation point", 0.5, "number"),
-                Field("h", "Step size", 0.001, "number"),
-                Field(
-                    "formula",
-                    "Difference formula",
-                    "central_first",
-                    "choice",
-                    (
-                        "central_first",
-                        "forward_first",
-                        "backward_first",
-                        "central_second",
-                    ),
-                ),
-            ],
-            differentiation_run,
-        ),
-        Method(
-            "Differentiation and ODEs",
-            "Classical RK4",
-            "Solves a scalar initial-value problem y'=f(t,y). Four slopes per step; final step is shortened to reach the endpoint. Explicit RK4 may be unsuitable for stiff problems.",
+            "RK2 (midpoint)",
+            "Solves a scalar initial-value problem y'=f(t,y) using the midpoint second-order Runge–Kutta method. The final step is shortened to reach the endpoint.",
             [
                 Field("f", "f(t,y)", "y"),
                 Field("t0", "Initial time", 0.0, "number"),

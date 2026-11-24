@@ -87,6 +87,16 @@ def main():
     st.set_page_config(
         page_title="Numerical Calculator | CS-2008", page_icon="∑", layout="wide"
     )
+    st.markdown(
+        """<style>
+        .stApp { background: radial-gradient(circle at 94% 3%, #dff4ff 0, transparent 24rem), #f8fbff; }
+        [data-testid="stSidebar"] { background: linear-gradient(180deg, #102a43, #1d4e69); }
+        [data-testid="stSidebar"] * { color: #f4fbff !important; }
+        .stButton > button { border-radius: 0.55rem; font-weight: 700; }
+        div[data-testid="stMetric"] { background: #ffffff; border: 1px solid #d7e5f0; border-radius: 0.7rem; padding: 0.7rem; }
+        </style>""",
+        unsafe_allow_html=True,
+    )
     st.sidebar.title("Numerical Calculator")
     st.sidebar.caption("CS-2008 · Numerical Computing")
     topics = list(dict.fromkeys(m.topic for m in METHODS))
@@ -103,7 +113,7 @@ def main():
     else:
         method = variants[0]
         name = method.name
-    st.caption(topic.upper())
+    st.caption(f"NUMERICAL WORKBENCH  /  {topic.upper()}")
     st.title(method.name)
     st.info(method.description)
     st.sidebar.markdown(
